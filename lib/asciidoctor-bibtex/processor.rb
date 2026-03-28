@@ -15,6 +15,7 @@ require 'latex/decode/punctuation'
 require 'latex/decode/symbols'
 require 'latex/decode/greek'
 require 'set'
+require 'asciidoctor'
 
 require_relative 'citation_macro'
 require_relative 'citation_utils'
@@ -154,8 +155,8 @@ module AsciidoctorBibtex
     def build_bibitem_text(key)
       begin
         if @biblio[key].nil?
-          puts "Unknown reference: #{key}"
-          cptext = key
+          ::Asciidoctor::LoggerManager.logger.error "asciidoctor-bibtex(build_bibitem_text): Unknown reference: #{key}"
+          exit
         else
           cptext = @citeproc.render :bibliography, id: key
           cptext = cptext.first
@@ -242,12 +243,9 @@ module AsciidoctorBibtex
 
           # if found, insert reference information
           if @biblio[cite.key].nil?
-            if @throw_on_unknown
-              raise "Unknown reference: #{cite.key}"
-            else
-              puts "Unknown reference: #{cite.key}"
-              cite_text = cite.key.to_s
-            end
+              # source_location: cite.parent.lineno
+              ::Asciidoctor::LoggerManager.logger.error "asciidoctor-bibtex(build_citation_text): Unknown reference: #{cite.key}"
+              exit
           else
             cite_text = citation_text(macro, cite)
           end
