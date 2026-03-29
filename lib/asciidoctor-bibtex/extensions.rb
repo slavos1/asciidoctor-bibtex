@@ -191,6 +191,47 @@ module AsciidoctorBibtex
         result
       end
     end
+
+    class WebpageBlockMacro < ::Asciidoctor::Extensions::BlockMacroProcessor
+      use_dsl
+      named :bibitemweb # Use as bibitemweb::key[] in your .adoc
+
+      def process(parent, target, attrs)
+        document = parent.document
+
+        # puts "document.attr=" + document.inspect
+        bibtex_file = (document.attr('bibtex-file')).to_s
+        bibtex_style = ((document.attr 'bibtex-style') || 'ieee').to_s
+        bibtex_locale = ((document.attr 'bibtex-locale') || 'en-US').to_s
+        numeric_in_appearance_order = false
+        output = :asciidoc
+        throw_on_unknown = throw_on_unknown
+        processor = Processor.new bibtex_file, true, bibtex_style, bibtex_locale, numeric_in_appearance_order, output, throw_on_unknown
+
+        # 2. Render the item via CiteProc (or your existing build_bibitem_text)
+        # For this example, we'll assume target is the 'key'
+        raw_text = processor.build_bibitem_text(target)
+        # puts "raw_text=#{raw_text}"
+        
+        # 3. Split the text into Term and Definition based on your '::'
+        if raw_text.include?(':: ')
+          term_text, desc_text = raw_text.split(':: ', 2)
+        else
+          term_text = target
+          desc_text = raw_text
+        end
+
+        # 4. Create a Description List (Definition List)
+        list = create_list(parent, :dlist)
+        term_item = create_list_item(list)
+        term_item.text = term_text.strip
+        desc_item = create_list_item(list)
+        desc_item.text = desc_text.strip
+        list.items << [[term_item], desc_item]
+
+        list
+      end
+    end
   end
 end
 
@@ -198,4 +239,5 @@ end
 Asciidoctor::Extensions.register do
   block_macro AsciidoctorBibtex::Asciidoctor::BibliographyBlockMacro
   treeprocessor AsciidoctorBibtex::Asciidoctor::CitationProcessor
+  block_macro AsciidoctorBibtex::Asciidoctor::WebpageBlockMacro
 end
