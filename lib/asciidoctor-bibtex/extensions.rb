@@ -222,7 +222,8 @@ module AsciidoctorBibtex
         end
 
         # 4. Create a Description List (Definition List)
-        list = create_list(parent, :dlist)
+        # we store "named" from above, no referenced as "name" as a "class" attribute
+        list = create_list(parent, :dlist, class: name, key: target)
         term_item = create_list_item(list)
         term_item.text = term_text.strip
         desc_item = create_list_item(list)
